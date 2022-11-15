@@ -9,9 +9,10 @@ import scipy
 from scipy import signal
 from scipy.fftpack import fft2, ifft2, fftshift, fftn, ifftn, ifftshift
 import matplotlib.pyplot as plt
+import math
 import matplotlib.image as mpimg
 
-import random as rd
+import numpy.random as rd
 
 import function
 #
@@ -174,31 +175,105 @@ import function
 
 #X = function.mcexp(n,w)
 
-fig1, ax1 = plt.subplots(3)
-X = function.mcgaus(0, 1, 1, int(1e3), 0.3)
-ax1[0].plot(X)
-X = function.mcgaus(0,1, 1, int(1e3), 3)
-ax1[1].plot(X)
-X = function.mcgaus(0, 1, 1, int(1e3), 30)
-ax1[2].plot(X)
+# fig1, ax1 = plt.subplots(3)
+# X = function.mcgaus(0, 1, 1, int(1e3), 0.3)
+# ax1[0].plot(X)
+# X = function.mcgaus(0,1, 1, int(1e3), 3)
+# ax1[1].plot(X)
+# X = function.mcgaus(0, 1, 1, int(1e3), 30)
+# ax1[2].plot(X)
+# plt.show()
+
+
+
+# X = function.mcgaus(0, 1, 20, int(1e3), 3)
+# plt.plot(X)
+# plt.show()
+#
+# #pause
+# #burn in
+#
+# X = function.mcgaus(0, 1, 1, int(1e6), 3)
+#
+# plt.hist(X, bins=30)
+# plt.show()
+#
+# print(np.var(X))
+# print(np.mean(X))
+
+
+######## compute 2 ##########
+
+# ws = np.linspace(1,8,100)
+# mu = 0
+# sig = 1
+# x0 = 0
+# n = int(1e5)
+#
+# for cnt in range(0,len(ws)):
+#     w = ws[cnt]
+#     X = function.mcgaus(mu, sig, x0, n, w)
+#     value, dvalue, ddvalue, tauint, dtauint, Qval = function.UWerr(X.transpose(), 1.5, length(X), 0)
+#     taus[cnt] = tauint * 2
+#
+
+
+# D = 0.5
+# L = 10
+# T = 2
+#
+# alpha = np.exp(-D* T* (np.pi/L)**2)
+# l = np.linspace(1,15,15)
+#
+# y = alpha**(l**2)
+#
+# #fig = plt.figure()
+# plt.scatter(l,y)
+# plt.yscale('log')
+# plt.xlabel('index')
+# plt.ylabel('eigenvalue')
+# plt.show()
+
+
+
+############ compute 4 ############
+
+npix = 100
+slide = np.ones((npix, npix)) #make npix*npix image
+
+ncellmax = 10   #max no of cells
+cellrad = 9.5   #radius of cells
+stddev = 0.1 # noise standard deviation
+
+ncell = 5 + math.ceil((ncellmax - 5) * rd.rand()) #random number of cells at leas 5
+pbad = 0.25 + 0.5* rd.rand()        #probability a cell is bad
+A = npix * rd.rand(2, ncell)
+xycell = np.ceil(npix * rd.rand(2, ncell))
+
+for icell in range(0,ncell-1):
+    if rd.rand() < pbad:
+        slide = function.putbad(slide, xycell[0,icell], xycell[1,icell], cellrad)
+    else:
+        slide = function.putgood(slide, xycell[0,icell], xycell[1,icell], cellrad)
+
+x,y = slide.shape
+slide = slide + stddev * rd.rand(x,y)
+
+plt.imshow(slide,cmap='gray')
 plt.show()
 
 
 
-X = function.mcgaus(0, 1, 20, int(1e3), 3)
-plt.plot(X)
-plt.show()
 
-#pause
-#burn in
 
-X = function.mcgaus(0, 1, 1, int(1e6), 3)
 
-plt.hist(X, bins=30)
-plt.show()
 
-print(np.var(X))
-print(np.mean(X))
+
+
+
+
+
+
 
 
 print("bla")
