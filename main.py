@@ -149,6 +149,7 @@ four_L = fftshift(fft2(L))
 
 reg_img = ifftshift( ifft2( fftshift( four_conv * np.conj(fourier_img) / (norm_psf + alpha * abs(four_L)**2 ))))
 
+
 reg_img = ifftshift(ifft2(fftshift(four_conv * fourier_img / (norm_psf + alpha * abs(four_L) ) ) ))
 
 #plt.imshow(abs(reg_img), cmap='gray')
