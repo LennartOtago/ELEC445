@@ -1,5 +1,3 @@
-import random
-
 import numpy as np
 import pylab as pl
 from PIL import Image, ImageOps
@@ -12,7 +10,6 @@ import matplotlib.pyplot as plt
 import math
 import matplotlib.image as mpimg
 import sympy as sy
-from sympy import *
 import numpy.random as rd
 import numpy.linalg as lin
 import function
@@ -131,6 +128,8 @@ four_conv = fftshift(fft2(org_img))
 
 
 L_org = np.array([[ 0, -1, 0],[ -1, 4, -1],[ 0, -1, 0]])
+L2 = np.concatenate((L_org,L_org,L_org,L_org))
+L3 = np.concatenate((L2,L2), axis = 1)
 L_1 = np.pad(L_org, ((6,6), (6,6)) )
 L =  np.pad(L_org, ((127,126), (127,126)) )
 #
@@ -187,10 +186,10 @@ ax.set_xscale('log')
 ax.set_yscale('log')
 # print(lambas[::100])
 #
-plt.scatter(norm_data, norm_f)
+#plt.scatter(norm_data, norm_f)
 # for i, txt in enumerate(alphas[0:26]):
 #    ax.annotate(np.around(txt,5), (norm_data[i], norm_f[i]))
-plt.show()
+#plt.show()
 
 Diag = abs(fft2(L))
 ABS_L = abs(four_L)
@@ -229,20 +228,20 @@ ATA = np.dot(sat_img.transpose(), sat_img)
 # eigVal,v = lin.eig(L_org)
 # Diag = np.diag(eigVal)
 # FFTDIA= abs( fft2(Diag))
-N= 3
-w = np.exp(-2j*np.pi*np.arange(N) / N)
-F1 = L_org.dot(w)
-
-
-
-
-
-# Create the first sinusoidal mode for the plot.
-mode1 = (F1.real * np.cos(2*np.pi*np.arange(N)/N) -
-         F1.imag*np.sin(2*np.pi*np.arange(N)/N))/np.abs(F1)
-mode2 = (F1.real * np.cos(4*np.pi*np.arange(N)/N) -
-         F1.imag*np.sin(4*np.pi*np.arange(N)/N))/np.abs(F1)
-
+# N= 3
+# w = np.exp(-2j*np.pi*np.arange(N) / N)
+# F1 = L_org.dot(w)
+#
+#
+#
+#
+#
+# # Create the first sinusoidal mode for the plot.
+# mode1 = (F1.real * np.cos(2*np.pi*np.arange(N)/N) -
+#          F1.imag*np.sin(2*np.pi*np.arange(N)/N))/np.abs(F1)
+# mode2 = (F1.real * np.cos(4*np.pi*np.arange(N)/N) -
+#          F1.imag*np.sin(4*np.pi*np.arange(N)/N))/np.abs(F1)
+#
 
 import matplotlib.pyplot as plt
 
@@ -354,4 +353,3 @@ print("bla")
 
 
 
-print("bla")
