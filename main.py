@@ -203,14 +203,40 @@ print(sum(sum(tikh_img)))
 
 
 #sample from prior
+number = 25
+l = np.zeros((number,number))
+l = np.array([[1,-1],[-1,1]])
+L= np.zeros((number,number))
+siz = int(np.sqrt(number))
+xp= np.arange(0,number,siz);
+x = xp[1::2]
+for j in range(1, len(x)):
 
-l = np.array([[2,-1],[-1,2]])
-L= np.zeros((258,258))
+    for i in range(x[j], x[j]+siz):
 
-for i in range(0, len(L)-1):
-        L[i:i+2,i:i+2] = L[i:i+2,i:i+2] + l
 
-L =L[1:257,1:257]
+        L[i,i] =  L[i,i] + 1
+        L[i,i+siz] =  L[i,i+siz]-1
+        L[i+siz, i+siz] = L[i+siz, i+siz] + 1
+        L[i+ siz, i ] = L[i+ siz, i] - 1
+
+        L[i, i] = L[i,i] +1
+        L[i, i+1] = L[i, i+1] - 1
+        L[i+1, i+1] = L[i+1, i+1] + 1
+        L[i+1, i ] = L[i+1, i] - 1
+
+        L[i, i] = L[i, i] + 1
+        L[i, i-1] = L[i, i-1] - 1
+        L[i-1, i-1] = L[i-1, i-1] + 1
+        L[i-1, i] = L[i-1, i] - 1
+
+        L[i, i] = L[i, i] + 1
+        L[i, i - siz] = L[i, i - siz] - 1
+        L[i- siz, i- siz] = L[i- siz, i- siz] + 1
+        L[i- siz, i] = L[i- siz, i] - 1
+
+
+#L =L[1:257,1:257]
 
 L_org = np.array([[ 0, -1, 0],[ -1, 4, -1],[ 0, -1, 0]])
 
