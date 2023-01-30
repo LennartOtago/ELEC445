@@ -334,7 +334,9 @@ res_img = np.zeros((n_sample,256,256))
 rho =  np.zeros(n_sample)
 gamma =  np.zeros(n_sample)
 
+#x = [[1,2,3],[4,5,6],[7,8,9]]
 
+#res_img[0] = x
 #intialize first sample
 
 rho[0] = 5.16e-5
@@ -384,7 +386,7 @@ print(np.var(v_2))
 
 
 v_rd = np.multiply(rd.normal(0,1,len(sat_img)**2),1)
-v_1 = np.pad(v_rd.reshape((len(sat_img),len(sat_img))) * sat_img, ((112,112), (112,112)) )
+v_1 = np.pad(v_rd.reshape(sat_img.shape) * sat_img, ((112,112), (112,112)) )
 #v_1=  np.multiply(padded_img,v_rd.reshape((256,256)))
 # v_1 = np.zeros((256,256))
 # v_rd = rd.normal(0,1,np.linalg.matrix_rank(padded_img))
@@ -406,17 +408,20 @@ v_1 = np.pad(v_rd.reshape((len(sat_img),len(sat_img))) * sat_img, ((112,112), (1
 
 #four_L = fftshift(fft2(L))
 w = np.sqrt(gamma[0]) *  np.conj(fft2(v_1)) + np.sqrt(rho[0]) * fft2(v_2)
-
+print(res_img.shape)
 img_store = (gamma[0] *four_conv * np.conj(fourier_img) + w )/ ( rho[0] * abs(four_L) +   gamma[0] * abs(fourier_img) ** 2)
 
-res_img[0] = fftshift(ifft2(img_store)).real
+res_img[0] = fftshift(ifft2( (gamma[0] *four_conv * np.conj(fourier_img) + w )/ ( rho[0] * abs(four_L) +   gamma[0] * abs(fourier_img) ** 2) )).real
+
+#res_img[0] = fftshift(ifft2(img_store)).real
 
 #print(sum(sum(fftshift(fft2(res_img[0])))))
 plt.imshow(res_img[0], cmap='gray')
 plt.show()
-
+norm_res2 = np.linalg.norm(img_store * fourier_img - fft2(org_img))
+print(norm_res2)
 #Ax = abs(ifftshift( ifft2( fftshift(  fft2(res_img[0]) * fourier_img))))
-norm_res = np.linalg.norm(img_store * fourier_img - fft2(org_img))
+norm_res = np.linalg.norm(fft2(fftshift(res_img[0])) * fourier_img - fft2(org_img))
 print(norm_res)
 # plt.imshow(Ax, cmap='gray')
 # plt.show()
