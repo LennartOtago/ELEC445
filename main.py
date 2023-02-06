@@ -4,15 +4,19 @@ from PIL import Image, ImageOps
 from numpy import array
 import scipy
 from scipy import signal
-from numpy.fft import fft2, ifft2, fftshift, fftn, ifftn, ifftshift
+from numpy.fft import fft2, ifft2, fftshift, fft, ifft, irfft2, rfft2, hfft,  ifftshift
 import matplotlib.pyplot as plt
 import math
 import matplotlib.image as mpimg
 import sympy as sy
 import numpy.random as rd
 import numpy.linalg as lin
+from scipy.fftpack import convolve
 import function
+import torch
+from torch import nn
 #
+import scipy.special as sps
 
 # m1 = 10
 # m2 = 30
@@ -75,134 +79,219 @@ import function
 #     s = np.sqrt(w)
 #
 #     print(np.sum(s>1e-6))
-#################################
+
+
+#######################################################
+
+
+test_mat = abs(np.around(rd.normal(0,1,(10,10)) * 10))
+conv = abs(np.around(rd.normal(0,1,(2,2)) * 10))
+conv_mat = conv/ sum(sum(conv))
+conv_mat_pad = np.pad(conv_mat, (0, len(test_mat)- len(conv_mat)) )
+def direct_linear_2D(x,h):
+    r = np.zeros((len(x),len(x)))
+
+    for k in range(len(x) ):
+        for l in range(len(x)):
+
+            for m in range(len(x)):
+                for n in range(len(x)):
+                    if k-m >= 0 and (l-n)>= 0 and (k-m) < len(h) and (l-n) < len(h) :
+                        r[k,l] = r[k,l] + (x[m,n] * h[(k-m),(l-n)])
+    return r
+
+direct_lin_conv_mat = direct_linear_2D(test_mat, conv_mat)
+scy_conv_mat = scipy.signal.convolve(test_mat, conv_mat, method = 'direct')[0:len(test_mat), 0:len(test_mat)]
+#do direct linear convolution through fft2 and zero padding
+final_lin_conv_mat_fft = ifft2(fft2(conv_mat, (2*len(test_mat),2*len(test_mat))) * fft2(test_mat,(2*len(test_mat),2*len(test_mat)))).real[0:len(test_mat), 0:len(test_mat)]
+
+print(np.allclose(direct_lin_conv_mat,final_lin_conv_mat_fft, atol= 1e-9))
+
+#2D circular convolution
+#matrices have to be same size and conv_matrix has to be zero padded
+def direct_circular_2D(x,h):
+    r = np.zeros((len(x),len(x)))
+    for k in range(len(x)):
+        for l in range(len(x)):
+
+            for m in range(len(x)):
+                for n in range(len(x)):
+                    #print('k-p ' + str((k - p)))
+                    #print((k - p) % len(g))
+                    r[k,l] = r[k,l] + (x[m,n] * h[ (k-m) % (len(h)) , (l-n) % (len(h)) ])
+
+    return r
+
+
+direct_circ_conv_mat = direct_circular_2D(test_mat, conv_mat_pad)
+final_circ_mat_fft = ifft2(fft2(conv_mat, (10,10)) * fft2(test_mat) ).real
+print(np.allclose(direct_circ_conv_mat,final_circ_mat_fft, atol= 1e-9))
+
+def transpose_conv_2d(X,H, padding):
+#H is kernel
+#X and H have to be squared
+#padding reduces the size of the output equally
+    X_pad = np.pad(X, (0,padding))
+    for x in range(padding):
+        X_pad[len(X)+x,:] = X_pad[x,:]
+        X_pad[:, len(X) + x] = X_pad[:,x]
+        X_pad[len(X) + x, len(X) + x] =  X_pad[x,x]
+    output_size = len(X_pad) - len(H)
+    Z = np.zeros((output_size,output_size))
+    #pad X
+
+#stride
+    k = 0
+
+    for i in range(output_size):
+        l = 0
+        for j in range(output_size):
+            Z[k,l] =  sum(sum(X_pad[i: (i+len(H)),j: (j+len(H)) ] * H))
+            l = l + 1
+        k = k + 1
+
+    return Z
+
+trans_circ_mat = transpose_conv_2d(test_mat, conv, len(conv))
+final_trans_circ_mat_fft = ifft2(  fft2(conv, (10,10)).conj() * fft2(test_mat) ).real
+print(np.allclose(trans_circ_mat,final_trans_circ_mat_fft, atol= 1e-9))
 # ################################################################
 
+#norm parseval theorem
 
+
+n = 100
+x = np.random.rand(n)
+f = fft(x)
+
+print(sum(abs(x)**2))
+
+print(sum(abs(f)**2)/n)
+print(np.linalg.norm(x)**2)
+print(np.linalg.norm(f)**2/n)
+
+
+# ## generate Laplacian Matrix
+#
+# number = 256**2
+# siz = int(np.sqrt(number))
+#
+# L = np.zeros((number,number))
+#
+# l = np.array([[1,-1],[-1,1]])
+#
+# l_boundud = np.zeros((number - siz + 1, number - siz + 1))
+# l_boundud[0, 0], l_boundud[0, -1], l_boundud[-1, 0], l_boundud[-1, -1] = 1, -1, -1, 1
+#
+# l_lr = np.zeros((siz,siz))
+# l_lr[0,0],l_lr[0,-1],l_lr[-1,0],l_lr[-1,-1] = 1,-1,-1,1
+#
+# l_ud = np.zeros((siz + 1, siz + 1))
+# l_ud[0,0],l_ud[0,-1],l_ud[-1,0],l_ud[-1,-1] = 1,-1,-1,1
+#
+#
+# #top to bottom first row
+# for i in range(0,siz):
+#     L[i:i+len(l_boundud), i:i + len(l_boundud)] = L[i:i + len(l_boundud), i:i + len(l_boundud)] + l_boundud
+#
+# #all normal consecutive neighbours
+# x = np.arange(0,number+siz,siz)
+# for j in range(1,len(x)):
+#     for i in range(x[j-1], x[j]-1):
+#         L[i:i + len(l), i:i + len(l)] = L[i:i + len(l), i:i + len(l)]  + l
+#
+# for j in range(0, siz):
+#     for i in range(0, siz-1):
+#         rand_num = (1 / np.sqrt(2)) * np.array([-1, 1]) * rd.normal(0, np.sqrt(2))
+#
+# #all normal up and down neighbours
+#
+# for j in range(1,len(x)-1):
+#     for i in range(x[j-1], x[j]):
+#         L[i:i + len(l_ud), i:i + len(l_ud)] = L[i:i + len(l_ud), i:i + len(l_ud)] + l_ud
+#
+# for j in range(0, siz-1):
+#     for i in range(0, siz):
+#         rand_num = (1 / np.sqrt(2)) * np.array([-1, 1]) * rd.normal(0, np.sqrt(2))
+#
+# #all left right boundaries neighbours
+#
+# for i in range(0, len(x)-1):
+#     #print(x[i])
+#     L[x[i]:x[i] + len(l_lr), x[i]:x[i] + len(l_lr)] = L[x[i]:x[i] + len(l_lr), x[i]:x[i] + len(l_lr)] + l_lr
+#
+
+#####################################
 gray_img = mpimg.imread('jupiter1.tif')
 
 
 # get psf from satellite
 org_img = array(gray_img)#/sum(sum(np.array(gray_img)))
+four_conv = fft2(org_img)#, axes = (1,0) ) #/ np.sqrt(256**2)
 # plt.imshow(org_img, cmap='gray')
 # plt.show()
+
+
 
 xpos = 234
 ypos = 85  # Pixel at centre of satellite
 sat_img_org = org_img[ypos - 16: ypos + 16, xpos - 16:xpos + 16]
 sat_img = sat_img_org / (sum(sum(sat_img_org)))
 sat_img[sat_img < 0.05*np.max(sat_img)] = 0
+
 # plt.imshow(sat_img, cmap='gray')
 # plt.show()
 
-# # blurred image
-# A_blurred = org_img * 1 / 25
-# img = Image.fromarray(A_blurred)
-#
-# zero pad image so padded_img has same size as org_img
-#padded_img = np.pad(sat_img, ((69, 155), (218, 6)))
-padded_img = np.pad(sat_img, ((112,112), (112,112)) )
 
-# plt.imshow(padded_img, cmap='gray')
-# plt.show()
-
-
-
-# # # convolved image with modified with normalized psf
-# A_conv = signal.convolve2d(org_img, sat_img, mode='same')
-# plt.imshow(A_conv, cmap='gray')
-# plt.show()
-#
-#
-
+pad_img = np.zeros((256,256))
+pad_img[0:32,0:32] = sat_img
+fourier_img = fft2(sat_img, (256,256))#, axes =(1,0) )
+fourier_img2 = fft2(pad_img)
 # # naive inversion by direct division
-fourier_img = fft2(padded_img) #/ np.sqrt(32**2)
-four_conv = fft2(org_img)#/ np.sqrt(256**2)
-
-decov_img = ifft2( fft2(org_img) /fft2(fftshift(padded_img)) ).real
-#
-# T = scipy.signal.convolve2d(decov_img, sat_img, boundary='wrap', mode = 'same')
-# plt.imshow(T, cmap='gray')
-# plt.show()
-#
-#
-# X = scipy.signal.deconvolve(org_img, sat_img)
-# plt.imshow(X, cmap='gray')
-# plt.show()
-# # print(sum(sum(org_img))/sum(sum(decov_img)))
-# print(sum(sum(org_img)))
-# print(sum(sum(T)))
-# # print(sum(sum(decov_img)))
-#
-# plt.imshow(abs(decov_img), cmap='gray')
-# plt.show()
+print(np.allclose(fourier_img, fourier_img2, atol= 1e-10))
 
 
 
 
-# L_org = np.array([[ 0, -1, 0],[ -1, 4, -1],[ 0, -1, 0]])
-# L =  np.pad(L_org, ((127,126), (127,126)) )
-# #
-# #
-#norm_psf = np.conj(fourier_img) * fourier_img
-norm_psf = abs(fourier_img)**2
-#
-lam = 0.10019
 
-tikh_img = ifftshift( ifft2( fftshift( four_conv * np.conj(fourier_img) / (lam ** 2 + norm_psf))))
-tikh_img = abs(tikh_img)
+lam = 0.100#19
 
-# plt.imshow(tikh_img, cmap='gray')
-# plt.show()
-# print(sum(sum(tikh_img)))
-# #
+tikh_img_store = ( ifft2( four_conv * np.conj(fourier_img) / (lam ** 2 +  abs(fourier_img)**2 )))
+tikh_img = tikh_img_store.real#[0:256,0:256]
+
+Z_fft = ifft2(four_conv * np.conj(fourier_img)).real
+Z =  transpose_conv_2d(org_img, sat_img, len(sat_img))
+print(np.allclose(Z, Z_fft, atol= 1e-9))
+
 
 alpha = 0.0056724
-#svd(padded_img.transpose(),padded_img)
 L_org = np.array([[ 0, -1, 0],[ -1, 4, -1],[ 0, -1, 0]])
-
-four_L = fft2( np.pad(  L_org, ((127,126), (127,126)) ))
-
-# plt.imshow(four_L.real, cmap='gray')
-# plt.show()
-
-#four_L = fft2( L)
-#norm_psf =  abs(fftshift(fft2(np.multiply(padded_img.transpose(), padded_img) )))
-
-gen_reg_img = abs( ifftshift( ifft2( fftshift(  four_conv * np.conj(fourier_img) / (norm_psf + alpha *  abs(four_L) )))))
-print(sum(sum(gen_reg_img)))
-
-# plt.imshow(gen_reg_img, cmap='gray')
-# plt.show()
-#
-# print('bla')
+four_L = fft2(  L_org, (256,256))
 
 
-alphas = np.linspace(0.000001,0.1,1000)
-#alphas = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10] ) * 1e-3
-alphas = np.logspace(-5,0, 200)
+print('bla')
+
+
+# alphas = np.linspace(0.000001,0.1,1000)
+# #alphas = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10] ) * 1e-3
+alphas = np.logspace(-9,1, 200)
 norm_f = [None] * len(alphas)
 norm_data = [None] * len(alphas)
 
 for i in range(0, len(alphas)):
 
-    # np.conj(fftshift(fft2(padded_img.transpose() ))) * fftshift(fft2(org_img))
-    #reg_img = ifftshift(ifft2(fftshift( four_conv * np.conj(fourier_img) /  (norm_psf +  alphas[i] * abs(four_L) ))))
     #tikh_img = four_conv * np.conj(fourier_img)/ (alphas[i] ** 2 +  abs(fourier_img)**2)
-    reg_img = four_conv * np.conj(fourier_img)/ (alphas[i] * abs(four_L) +  abs(fourier_img)**2)
-    #XL = ifftshift( ifft2( fftshift( abs(fftshift(fft2(reg_img)))**2 * abs(four_L))))
-    norm_f[i] = np.linalg.norm( fftshift(ifft2( abs(reg_img)**2 * abs(four_L) )))  #np.sqrt(sum(sum(abs(XL))))
-    #norm_f[i] = np.sqrt(sum(sum(np.multiply(reg_img, abs(XL)))))
-    #FH = ifftshift(ifft2(fftshift( fourier_img * fftshift(fft2(reg_img))  )))
-    #D = (abs(FH - org_img))**2
-    norm_data[i] = np.linalg.norm(fftshift(ifft2(four_conv - reg_img * fourier_img))) #np.sqrt(sum(sum(D)))
-
+    reg_img = four_conv * np.conj(fourier_img)/ (alphas[i] * four_L +  abs(fourier_img)**2)
+    x = np. matrix.flatten(reg_img)
+    norm_f[i] = np.sqrt( sum(sum( reg_img.conj() * four_L * reg_img)).real)/256
+    norm_data[i] = np.linalg.norm(ifft2(four_conv - reg_img * fourier_img))
+#   norm_data[i] = np.linalg.norm(four_conv - reg_img * fourier_img)/256
 reg_img = four_conv * np.conj(fourier_img) / (alphas[109] * abs(four_L) + abs(fourier_img) ** 2)
-c = fftshift(ifft2(reg_img)).real
-plt.imshow(fftshift(ifft2(reg_img)).real, cmap='gray')
+c = ifft2(reg_img).real
+plt.imshow(c, cmap='gray')
 plt.show()
 
-#
+
 fig2 = plt.figure()
 ax = fig2.add_subplot()
 ax.set_xscale('log')
@@ -222,18 +311,6 @@ ax.annotate(np.around(txt,5), (norm_data[i], norm_f[i]))
 plt.show()
 
 
-
-
-# res_img = ifftshift( ifft2( fftshift( gamma * four_conv * np.conj(fourier_img) + v_1 + v_2/ ( gamma *abs(fftshift(fft2(ATA))) +  rho * abs(four_L) ) )))
-
-#plt.imshow(abs(res_img), cmap='gray')
-#plt.show()
-# test = np.zeros(1000000)
-# for i in range(0,len(test)):
-#     test[i]= 1/np.sqrt(2) * rd.normal(0,1)
-# print(sum(test)/len(test))
-# print(np.mean(test))
-#
 
 #sample from prior
 number = 256
@@ -339,12 +416,16 @@ gamma =  np.zeros(n_sample)
 #res_img[0] = x
 #intialize first sample
 
-rho[0] = 5.16e-5
+rho[0] =  5.16e-5
 
 gamma[0] = 0.218
 
+
 number = 256**2
 siz = int(np.sqrt(number))
+
+
+
 v_2 = np.zeros((siz, siz))
 #top to bottom first row
 for i in range(0,siz):
@@ -374,9 +455,9 @@ for i in range(0, len(x)-1):
     v_2[i, 0], v_2[i, -1] = [v_2[i, 0], v_2[i, -1]] + np.array(rand_num)
 
 
-print(np.mean(v_2))
-print(np.var(v_2))
-[u,sigmas,vh]=np.linalg.svd(padded_img)
+# print(np.mean(v_2))
+# print(np.var(v_2))
+#[u,sigmas,vh]=np.linalg.svd(padded_img)
 # A = np.zeros((256,256))
 #
 # print(np.allclose(np.dot(padded_img.T , padded_img), np.dot(vh.T * sigmas**2, vh)))
@@ -385,8 +466,9 @@ print(np.var(v_2))
 #     A = A +sigmas[i]**2 * np.dot(np.matrix(vh[i,:]).T, np.matrix(vh[i,:]))
 
 
-v_rd = np.multiply(rd.normal(0,1,len(sat_img)**2),1)
-v_1 = np.pad(v_rd.reshape(sat_img.shape) * sat_img, ((112,112), (112,112)) )
+# v_rd = np.multiply(rd.normal(0,1,len(sat_img)**2),1)
+v_rd = rd.normal(0,1,256**2).reshape((256,256))
+# v_1 = np.pad(v_rd.reshape(sat_img.shape) * sat_img, ((112,112), (112,112)) )
 #v_1=  np.multiply(padded_img,v_rd.reshape((256,256)))
 # v_1 = np.zeros((256,256))
 # v_rd = rd.normal(0,1,np.linalg.matrix_rank(padded_img))
@@ -407,36 +489,37 @@ v_1 = np.pad(v_rd.reshape(sat_img.shape) * sat_img, ((112,112), (112,112)) )
 # v_1=  np.multiply(padded_img ,v_rd.reshape((256,256)))
 
 #four_L = fftshift(fft2(L))
-w = np.sqrt(gamma[0]) *  np.conj(fft2(v_1)) + np.sqrt(rho[0]) * fft2(v_2)
-print(res_img.shape)
-img_store = (gamma[0] *four_conv * np.conj(fourier_img) + w )/ ( rho[0] * abs(four_L) +   gamma[0] * abs(fourier_img) ** 2)
+w = np.sqrt(gamma[0]) * np.conj(fourier_img) * fft2(v_rd) + np.sqrt(rho[0]) * fft2(v_2)
 
-res_img[0] = fftshift(ifft2( (gamma[0] *four_conv * np.conj(fourier_img) + w )/ ( rho[0] * abs(four_L) +   gamma[0] * abs(fourier_img) ** 2) )).real
+img_store =  (gamma[0] * four_conv * np.conj(fourier_img) + w)/ ( rho[0] * abs(four_L) +   gamma[0] * abs(fourier_img)**2)
 
-#res_img[0] = fftshift(ifft2(img_store)).real
+im = ifft2( img_store ).real
+res_img[0]= im
+#img = org_img + np.reshape(rd.normal(0, 1, 256**2),(256,256))
 
-#print(sum(sum(fftshift(fft2(res_img[0])))))
 plt.imshow(res_img[0], cmap='gray')
 plt.show()
-norm_res2 = np.linalg.norm(img_store * fourier_img - fft2(org_img))
-print(norm_res2)
-#Ax = abs(ifftshift( ifft2( fftshift(  fft2(res_img[0]) * fourier_img))))
-norm_res = np.linalg.norm(fft2(fftshift(res_img[0])) * fourier_img - fft2(org_img))
+norm_res = np.linalg.norm( img_store * fourier_img - fft2(org_img))/256
 print(norm_res)
-# plt.imshow(Ax, cmap='gray')
-# plt.show()
-#T[256:(256*2),256:(256*2)]
 
+#res_img[0][res_img[0]<0] = 0
+norm_L = np.sqrt((sum(sum(img_store.conj() * abs(four_L) * img_store))).real)/256
+print(norm_L)
 
-for n in range(1, n_sample-1):
+shape_gamma, scale_gamma = m/2 + a_gamma, 1/(0.5 * norm_res**2 + b_gamma)
+shape_rho, scale_rho = m/2 + a_rho, 1/(0.5 * norm_L**2 + b_rho)
+mean_gamma = shape_gamma*scale_gamma
+mean_rho = shape_rho * scale_rho
 
-    norm_res = np.linalg.norm(img_store * fourier_img - fft2(org_img))
+for n in range(1, n_sample):
 
-    shape_gamma, scale_gamma = m/2 + a_gamma, 1/(0.5 * norm_res + b_gamma)
+    norm_L = np.sqrt((sum(sum(img_store.conj() * abs(four_L) * img_store))).real)/256
+    norm_res = np.linalg.norm( img_store * fourier_img - fft2(org_img))/256
+    shape_gamma, scale_gamma = m/2 + a_gamma, 1/(0.5 * norm_res**2 + b_gamma)#1,1e4 #
 
-    gamma[n] = rd.gamma(shape_gamma, scale_gamma)
-    shape_rho, scale_rho = m/2 + a_rho, 1/(0.5 * norm_res + b_rho)
-    rho[n] = rd.gamma(shape_rho, scale_rho)
+    gamma[n] =np.random.default_rng().gamma(shape_gamma, scale_gamma)
+    shape_rho, scale_rho = m/2 + a_rho, 1/(0.5 *  norm_L**2 + b_rho)#1,1e4 #
+    rho[n] =  np.random.default_rng().gamma(shape_rho, scale_rho)
     v_2 = np.zeros((siz, siz))
     # top to bottom first row
     for i in range(0, siz):
@@ -465,15 +548,16 @@ for n in range(1, n_sample-1):
         rand_num = np.array([-1, 1]) * rd.normal(0, 1)
         v_2[i, 0], v_2[i, -1] = [v_2[i, 0], v_2[i, -1]] + np.array(rand_num)
 
-    v_rd = np.multiply(rd.normal(0, 1, 256 * 256), 1)
-    v_1 = np.multiply(padded_img, v_rd.reshape((256, 256)))
-    w = np.sqrt(gamma[n]) * np.conj(fft2(v_1)) + np.sqrt(rho[n]) * fft2(v_2)
+    v_rd = rd.normal(0,1,256**2).reshape((256,256))
+    w = np.sqrt(gamma[n]) * np.conj(fourier_img) * fft2(v_rd) + np.sqrt(rho[n]) * fft2(v_2)
     print(rho[n])
     print(gamma[n])
     img_store = (gamma[n] * four_conv * np.conj(fourier_img) + w) / (
                 rho[n] * abs(four_L) + gamma[n] * abs(fourier_img) ** 2)
-    res_img[n] = fftshift(ifft2(img_store)).real
+    res_img[n] = ifft2( (gamma[n] * four_conv * np.conj(fourier_img) + w )/ ( rho[n] * abs(four_L) +   gamma[n] * abs(fourier_img) ** 2) ).real
 
+    # plt.imshow(res_img[n], cmap='gray')
+    # plt.show()
 G = sum(gamma[60::])/(n_sample-60)
 Rh = sum(rho[60::])/(n_sample-60)
 
