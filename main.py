@@ -439,6 +439,7 @@ LR =  np.matmul(l, R).real
 
 RD = np.matmul(R,[[0,0],[0,2]]).real
 
+
 RTLR = (np.matmul(R.T.conj() , np.matmul(l,R))).real
 a_gamma = 1
 a_rho = 1
