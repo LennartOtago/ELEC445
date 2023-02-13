@@ -171,56 +171,6 @@ print(np.linalg.norm(x)**2)
 print(np.linalg.norm(f)**2/n)
 
 
-# ## generate Laplacian Matrix
-#
-# number = 256**2
-# siz = int(np.sqrt(number))
-#
-# L = np.zeros((number,number))
-#
-# l = np.array([[1,-1],[-1,1]])
-#
-# l_boundud = np.zeros((number - siz + 1, number - siz + 1))
-# l_boundud[0, 0], l_boundud[0, -1], l_boundud[-1, 0], l_boundud[-1, -1] = 1, -1, -1, 1
-#
-# l_lr = np.zeros((siz,siz))
-# l_lr[0,0],l_lr[0,-1],l_lr[-1,0],l_lr[-1,-1] = 1,-1,-1,1
-#
-# l_ud = np.zeros((siz + 1, siz + 1))
-# l_ud[0,0],l_ud[0,-1],l_ud[-1,0],l_ud[-1,-1] = 1,-1,-1,1
-#
-#
-# #top to bottom first row
-# for i in range(0,siz):
-#     L[i:i+len(l_boundud), i:i + len(l_boundud)] = L[i:i + len(l_boundud), i:i + len(l_boundud)] + l_boundud
-#
-# #all normal consecutive neighbours
-# x = np.arange(0,number+siz,siz)
-# for j in range(1,len(x)):
-#     for i in range(x[j-1], x[j]-1):
-#         L[i:i + len(l), i:i + len(l)] = L[i:i + len(l), i:i + len(l)]  + l
-#
-# for j in range(0, siz):
-#     for i in range(0, siz-1):
-#         rand_num = (1 / np.sqrt(2)) * np.array([-1, 1]) * rd.normal(0, np.sqrt(2))
-#
-# #all normal up and down neighbours
-#
-# for j in range(1,len(x)-1):
-#     for i in range(x[j-1], x[j]):
-#         L[i:i + len(l_ud), i:i + len(l_ud)] = L[i:i + len(l_ud), i:i + len(l_ud)] + l_ud
-#
-# for j in range(0, siz-1):
-#     for i in range(0, siz):
-#         rand_num = (1 / np.sqrt(2)) * np.array([-1, 1]) * rd.normal(0, np.sqrt(2))
-#
-# #all left right boundaries neighbours
-#
-# for i in range(0, len(x)-1):
-#     #print(x[i])
-#     L[x[i]:x[i] + len(l_lr), x[i]:x[i] + len(l_lr)] = L[x[i]:x[i] + len(l_lr), x[i]:x[i] + len(l_lr)] + l_lr
-#
-
 #####################################
 gray_img = mpimg.imread('jupiter1.tif')
 
@@ -272,48 +222,51 @@ four_L = fft2(  L_org, (256,256))
 print('bla')
 
 
-# alphas = np.linspace(0.000001,0.1,1000)
-# #alphas = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10] ) * 1e-3
-alphas = np.logspace(-9,1, 200)
-norm_f = [None] * len(alphas)
-norm_data = [None] * len(alphas)
-
-for i in range(0, len(alphas)):
-
-    #tikh_img = four_conv * np.conj(fourier_img)/ (alphas[i] ** 2 +  abs(fourier_img)**2)
-    reg_img = four_conv * np.conj(fourier_img)/ (alphas[i] * four_L +  abs(fourier_img)**2)
-    x = np. matrix.flatten(reg_img)
-    norm_f[i] = np.sqrt( sum(sum( reg_img.conj() * four_L * reg_img)).real)/256
-    norm_data[i] = np.linalg.norm(ifft2(four_conv - reg_img * fourier_img))
-#   norm_data[i] = np.linalg.norm(four_conv - reg_img * fourier_img)/256
-reg_img = four_conv * np.conj(fourier_img) / (alphas[109] * abs(four_L) + abs(fourier_img) ** 2)
-c = ifft2(reg_img).real
-plt.imshow(c, cmap='gray')
-plt.show()
-
-
-fig2 = plt.figure()
-ax = fig2.add_subplot()
-ax.set_xscale('log')
-ax.set_yscale('log')
-# plt.xlim((10,1e4))
-# plt.ylim((1e3,1e6))
-# print(lambas[::100])
-
-plt.scatter(norm_data, norm_f)
-# for i, txt in enumerate(alphas[0:26]):
-i = 50
-txt = alphas[i]
-ax.annotate(np.around(txt,5), (norm_data[i], norm_f[i]))
-i = 109
-txt = alphas[i]
-ax.annotate(np.around(txt,5), (norm_data[i], norm_f[i]))
-plt.show()
+# # alphas = np.linspace(0.000001,0.1,1000)
+# # #alphas = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10] ) * 1e-3
+# alphas = np.logspace(-9,1, 200)
+# norm_f = [None] * len(alphas)
+# norm_data = [None] * len(alphas)
+#
+# for i in range(0, len(alphas)):
+#
+#     #tikh_img = four_conv * np.conj(fourier_img)/ (alphas[i] ** 2 +  abs(fourier_img)**2)
+#     reg_img = four_conv * np.conj(fourier_img)/ (alphas[i] * abs(four_L) +  abs(fourier_img)**2)
+#     x = np. matrix.flatten(reg_img)
+#     norm_f[i] = np.sqrt( sum(sum( abs(reg_img.conj() * four_L * reg_img))))/256
+#     norm_data[i] = np.linalg.norm(ifft2(four_conv - reg_img * fourier_img))
+# #   norm_data[i] = np.linalg.norm(four_conv - reg_img * fourier_img)/256
+# reg_img = four_conv * np.conj(fourier_img) / (alphas[109] * abs(four_L) + abs(fourier_img) ** 2)
+# c = ifft2(reg_img).real
+# plt.imshow(c, cmap='gray')
+# plt.show()
+#
+#
+# fig2 = plt.figure()
+# ax = fig2.add_subplot()
+# ax.set_xscale('log')
+# ax.set_yscale('log')
+# # plt.xlim((10,1e4))
+# # plt.ylim((1e3,1e6))
+# # print(lambas[::100])
+#
+# plt.scatter(norm_data, norm_f)
+# k = 0
+# for i, txt in enumerate(alphas[::5]):
+#
+# #i = 50
+# #txt = alphas[i]
+#     ax.annotate(np.around(txt,9), (norm_data[k], norm_f[k]))
+#     k = k + 5
+# # i = 109
+# # txt = alphas[i]
+# # ax.annotate(np.around(txt,5), (norm_data[i], norm_f[i]))
+# plt.show()
 
 
 
 #sample from prior
-number = 256
+number = 25
 siz = int(np.sqrt(number))
 
 L = np.zeros((number,number))
@@ -328,8 +281,6 @@ l_lr[0,0],l_lr[0,-1],l_lr[-1,0],l_lr[-1,-1] = 1,-1,-1,1
 
 l_ud = np.zeros((siz + 1, siz + 1))
 l_ud[0,0],l_ud[0,-1],l_ud[-1,0],l_ud[-1,-1] = 1,-1,-1,1
-
-#l_svd = 1/np.sqrt(2) * np.array([1,1])
 
 
 
@@ -372,8 +323,8 @@ for n in range(0, n_sample):
 
     #all left right boundaries neighbours
 
-    for i in range(0, len(x)-1):
-        #print(x[i])
+    for i in range(0, siz):
+        print(i)
         L[x[i]:x[i] + len(l_lr), x[i]:x[i] + len(l_lr)] = L[x[i]:x[i] + len(l_lr), x[i]:x[i] + len(l_lr)] + l_lr
         rand_num = (1 / np.sqrt(2)) * np.array([-1, 1]) * rd.normal(0, np.sqrt(2))
         # rand_num = np.array([-1, 1]) * rd.normal(0, 1)
@@ -382,24 +333,113 @@ for n in range(0, n_sample):
 
     samples[n] = v_2
 
-#check mean and variance
-m_ean = sum(sum(sum(samples)))/(n_sample*number)
-# print(m_ean)
-# print(np.mean(samples, dtype=np.float64))
-# print( sum(sum(sum((samples - m_ean)**2)))/((n_sample*number)-1))
-# print(np.var(samples, dtype=np.float64))
+L = np.zeros((number,number))
+v_2 = np.zeros((siz, siz))
+k = 0
+#top to bottom first row
+for i in range(0,siz):
+    k = k + 1
+    L[i:i+len(l_boundud), i:i + len(l_boundud)] = L[i:i + len(l_boundud), i:i + len(l_boundud)] + l_boundud
+    rand_num = np.sqrt(2) * np.array([-1, 1])
+    # rand_num = np.array([-1, 1]) * rd.normal(0, 1)
+    v_2[0,i], v_2[-1,i] = [v_2[0,i], v_2[-1,i]] + np.array(rand_num)
 
-M = np.zeros((siz,siz))
-V = np.zeros((siz,siz))
+#all normal consecutive neighbours
+x = np.arange(0,number+siz,siz)
+for j in range(1,len(x)):
+    for i in range(x[j-1], x[j]-1):
+        k = k + 1
+        L[i:i + len(l), i:i + len(l)] = L[i:i + len(l), i:i + len(l)]  + l
+
+for j in range(0, siz):
+    for i in range(0, siz-1):
+        rand_num = np.sqrt(2) * np.array([-1, 1])
+        # rand_num = np.array([-1, 1]) * rd.normal(0, 1)
+        v_2[j, i], v_2[j, i+1] = [v_2[j, i], v_2[j, i+1]] + np.array(rand_num)
+
+#all normal up and down neighbours
+
+for j in range(1,len(x)-1):
+    for i in range(x[j-1], x[j]):
+        k = k + 1
+        L[i:i + len(l_ud), i:i + len(l_ud)] = L[i:i + len(l_ud), i:i + len(l_ud)] + l_ud
+
+for j in range(0, siz-1):
+    for i in range(0, siz):
+        rand_num = np.sqrt(2) * np.array([-1, 1])
+        # rand_num = np.array([-1, 1]) * rd.normal(0, 1)
+        v_2[j, i], v_2[j+1, i] = [v_2[j, i], v_2[j+1, i]] + np.array(rand_num)
+
+#all left right boundaries neighbours
 
 for i in range(0, siz):
-    for j in range(0,siz):
-        M[i,j]  = sum(samples[:,i,j])/n_sample
-        V[i,j] = sum((samples[:,i,j] - M[i,j])**2) / n_sample
+    k = k + 1
+    L[x[i]:x[i] + len(l_lr), x[i]:x[i] + len(l_lr)] = L[x[i]:x[i] + len(l_lr), x[i]:x[i] + len(l_lr)] + l_lr
+    rand_num = np.sqrt(2) * np.array([-1, 1])
+    # rand_num = np.array([-1, 1]) * rd.normal(0, 1)
+    v_2[i, 0], v_2[i, -1] = [v_2[i, 0], v_2[i, -1]] + np.array(rand_num)
 
 
 
 
+
+v, w = np.linalg.eig(L)
+u1, v1, vh1 = np.linalg.svd(L)
+
+W = np.ndarray(shape = (number,number), dtype = 'csingle')
+W_trans = np.zeros((number,number))
+for m in range(number):
+    for n in range(number):
+        W[m,n] =  np.exp( -2j * np.pi * m * n / number)/ np.sqrt(number)
+
+W_trans =   W.T.conj() / np.sqrt(number)
+
+
+
+
+LTL = np.matmul(L.T,L)
+LLT = np.matmul(L,L.T)
+print(np.allclose(LTL,LLT))
+
+
+SIGMA =(np.matmul(W_trans, np.matmul(L,W))).real
+
+lW = np.matmul(L,W).real
+lW2 = np.matmul(W,L).real
+
+
+
+WD =np.matmul(W, 8 * np.identity(number) ).real
+
+
+number = 2
+W = np.ndarray(shape = (number,number), dtype = 'csingle')
+W_trans = np.zeros((number,number))
+for m in range(number):
+    for n in range(number):
+        W[m,n] =  np.exp( -2j * np.pi * m * n / number) / np.sqrt(number)
+
+W_trans =   W.T.conj() / np.sqrt(number)
+
+
+
+
+
+
+
+N = 2
+R = np.ndarray(shape = (2,2), dtype = 'csingle')
+for i in range(len(l)):
+    for k in range(len(l)):
+        R[i,k] =  np.exp(-2j * np.pi * i * k / N) / np.sqrt(N)
+
+
+
+LR =  np.matmul(l, R).real
+
+RD = np.matmul(R,[[0,0],[0,2]]).real
+
+RTLR = (np.matmul(R.T.conj() , np.matmul(l,R))).real
 a_gamma = 1
 a_rho = 1
 b_gamma = 1e-4
@@ -411,15 +451,17 @@ res_img = np.zeros((n_sample,256,256))
 rho =  np.zeros(n_sample)
 gamma =  np.zeros(n_sample)
 
-#x = [[1,2,3],[4,5,6],[7,8,9]]
 
-#res_img[0] = x
 #intialize first sample
 
 rho[0] =  5.16e-5
 
 gamma[0] = 0.218
 
+L_i = 16
+func_f = sum( sum(  abs(four_conv)**2 * rho[0]/ gamma[0] *L_i /abs(fourier_img)**2 / ( 1+ rho[0]/ gamma[0] * L_i/abs(fourier_img)**2)))/256**2
+
+func_g = sum(sum(abs(fourier_img)**2 )) + sum(sum( 1+ rho[0]/ gamma[0] * L_i/abs(fourier_img)**2) )
 
 number = 256**2
 siz = int(np.sqrt(number))
@@ -454,41 +496,8 @@ for i in range(0, len(x)-1):
     rand_num = np.array([-1, 1]) * rd.normal(0, 1)
     v_2[i, 0], v_2[i, -1] = [v_2[i, 0], v_2[i, -1]] + np.array(rand_num)
 
-
-# print(np.mean(v_2))
-# print(np.var(v_2))
-#[u,sigmas,vh]=np.linalg.svd(padded_img)
-# A = np.zeros((256,256))
-#
-# print(np.allclose(np.dot(padded_img.T , padded_img), np.dot(vh.T * sigmas**2, vh)))
-
-# for i in range(0, np.linalg.matrix_rank(padded_img) ):
-#     A = A +sigmas[i]**2 * np.dot(np.matrix(vh[i,:]).T, np.matrix(vh[i,:]))
-
-
-# v_rd = np.multiply(rd.normal(0,1,len(sat_img)**2),1)
 v_rd = rd.normal(0,1,256**2).reshape((256,256))
-# v_1 = np.pad(v_rd.reshape(sat_img.shape) * sat_img, ((112,112), (112,112)) )
-#v_1=  np.multiply(padded_img,v_rd.reshape((256,256)))
-# v_1 = np.zeros((256,256))
-# v_rd = rd.normal(0,1,np.linalg.matrix_rank(padded_img))
-# for i in range(0, np.linalg.matrix_rank(padded_img) ):
-#    v_1 = v_1 +sigmas[i] * np.dot(np.matrix(vh[i,:]).T * v_rd[i], np.matrix(vh[i,:]) )
 
-#
-# plt.imshow(v_2)
-# plt.show()
-# print(np.allclose(np.dot(padded_img.T , padded_img),A ))
-#
-# plt.imshow(np.dot(vh.T * sigmas**2, vh))
-# plt.show()
-#
-# plt.imshow(np.dot(padded_img.T , padded_img))
-# plt.show()
-# v_rd = rd.normal(0,1,256*256)
-# v_1=  np.multiply(padded_img ,v_rd.reshape((256,256)))
-
-#four_L = fftshift(fft2(L))
 w = np.sqrt(gamma[0]) * np.conj(fourier_img) * fft2(v_rd) + np.sqrt(rho[0]) * fft2(v_2)
 
 img_store =  (gamma[0] * four_conv * np.conj(fourier_img) + w)/ ( rho[0] * abs(four_L) +   gamma[0] * abs(fourier_img)**2)
@@ -503,7 +512,7 @@ norm_res = np.linalg.norm( img_store * fourier_img - fft2(org_img))/256
 print(norm_res)
 
 #res_img[0][res_img[0]<0] = 0
-norm_L = np.sqrt((sum(sum(img_store.conj() * abs(four_L) * img_store))).real)/256
+norm_L = np.sqrt(sum(sum(abs(img_store.conj() * four_L * img_store)))) / 256
 print(norm_L)
 
 shape_gamma, scale_gamma = m/2 + a_gamma, 1/(0.5 * norm_res**2 + b_gamma)
@@ -513,7 +522,7 @@ mean_rho = shape_rho * scale_rho
 
 for n in range(1, n_sample):
 
-    norm_L = np.sqrt((sum(sum(img_store.conj() * abs(four_L) * img_store))).real)/256
+    norm_L = np.sqrt(sum(sum(abs(img_store.conj() * four_L * img_store))))/256
     norm_res = np.linalg.norm( img_store * fourier_img - fft2(org_img))/256
     shape_gamma, scale_gamma = m/2 + a_gamma, 1/(0.5 * norm_res**2 + b_gamma)#1,1e4 #
 
